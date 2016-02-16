@@ -1,0 +1,23 @@
+{
+  "name": "dom-highlight-range",
+  "version": "1.0.0",
+  "description": "Highlight (put into <span>s) text nodes in a given DOM Range.",
+  "main": "highlight-range.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Treora/dom-highlight-range.git"
+  },
+  "keywords": [
+    "Range",
+    "highlight"
+  ],
+  "author": "Gerben",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/Treora/dom-highlight-range/issues"
+  },
+  "homepage": "https://github.com/Treora/dom-highlight-range"
+}

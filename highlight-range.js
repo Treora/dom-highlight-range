@@ -152,4 +152,6 @@ function removeHighlight(highlight) {
 return highlightRange;
 })();
 
-module.exports = highlightRange;
+if (typeof module !== 'undefined') {
+    module.exports = highlightRange;
+}

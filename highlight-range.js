@@ -28,22 +28,7 @@ function highlightRange(rangeObject, highlightTemplate) {
         return;
     }
 
-    var highlightCallback = highlightTemplate || defaultHighlight;
-    if ('string' === typeof highlightTemplate) {
-      highlightCallback = function _highlightTemplateClassName() {
-        var span = document.createElement('span');
-        span.classList.add(highlightTemplate);
-        return span;
-      };
-    }
-    if (highlightTemplate instanceof HTMLElement) {
-      highlightCallback = function _highlightTemplateHTMLElement() {
-        return highlightTemplate.cloneNode();
-      };
-    }
-    if ('function' !== typeof highlightCallback) {
-      throw new TypeError('highlightTemplate must be a string, HTMLElement, or function: ' + typeof highlightTemplate);
-    }
+    var highlightCallback = calculateHighlightCallback(highlightTemplate);
 
     // First put all nodes in an array (splits start and end nodes)
     var nodes = textNodesInRange(rangeObject);
@@ -84,6 +69,34 @@ function highlightRange(rangeObject, highlightTemplate) {
     return cleanupHighlights;
 }
 
+/**
+ * Figure out which factory function callback to use to create a highlight Node.
+ * 
+ * @param {string|function|HTMLElement} highlightTemplate
+ * @return {function} - a function that will be used to construct a highlight Node
+ * @throws {TypeError}
+ * @private
+ */
+function calculateHighlightCallback(highlightTemplate) {
+    if ('function' === typeof highlightTemplate) return highlightTemplate;
+    if (highlightTemplate instanceof HTMLElement) {
+        return function _highlightTemplateHTMLElement() {
+            return highlightTemplate.cloneNode();
+        };
+    }
+    if ('string' === typeof highlightTemplate) {
+        return function _highlightTemplateClassName() {
+            var span = document.createElement('span');
+            span.classList.add(highlightTemplate);
+            return span;
+        }
+    }
+    if(undefined === highlightTemplate) {
+        return calculateHighlightCallback('highlighted-range');
+    }
+    var msg = 'highlightTemplate must be a string, an HTMLElement, a function, or undefined: ' + typeof highlightTemplate;
+    throw new TypeError(msg);
+}
 
 // Return an array of the text nodes in the range. Split the start and end nodes if required.
 function textNodesInRange(rangeObject) {
@@ -218,12 +231,6 @@ function removeHighlight(highlight) {
     }
     // Remove the now empty node
     highlight.remove();
-}
-
-function defaultHighlight(node) {
-    var span = document.createElement('span');
-    span.classList.add('highlighted-range');
-    return span;
 }
 
 return highlightRange;

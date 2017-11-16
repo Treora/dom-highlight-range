@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="utf-8" />
+    <title>highlight-range</title>
+    <script type="text/javascript" src="highlight-range.js"></script>
+    <script type="text/javascript">
+
+        document.addEventListener('DOMContentLoaded', function (evt) {
+            document.addEventListener('click', function (evt) {
+                var selection = window.getSelection();
+                if (selection.isCollapsed) return;
+                var range = window.getSelection().getRangeAt(0);
+                var content = document.querySelector('#Content');
+                // Only highlight stuff fully contained in #Content
+                if (!content.contains(range.startContainer) || !content.contains(range.endContainer)) return;
+                if (evt.target.matches('#Default')) {
+                    highlightRange(range);
+                    selection.removeAllRanges();
+                }
+                if (evt.target.matches('#CustomClass')) {
+                    highlightRange(range, 'custom-highlight');
+                    selection.removeAllRanges();
+                }
+                if (evt.target.matches('#HTMLElement')) {
+                    var mark = document.createElement('mark');
+                    mark.dataset.customId = 'mark-1';
+                    highlightRange(range, mark);
+                    selection.removeAllRanges();
+                }
+                if (evt.target.matches('#CustomFunction')) {
+                    highlightRange(range, function (node) {
+                        var text = node.textContent;
+                        if (/^https?:\/\//.test(text)) {
+                            var a = document.createElement('a');
+                            a.href = text;
+                            a.classList.add('custom-function')
+                            return a;
+                        }
+                        var span = document.createElement('span');
+                        span.classList.add('custom-function');
+                        return span;
+                    });
+                    selection.removeAllRanges();
+                }
+            });
+        });
+
+    </script>
+    <style type="text/css" rel="stylesheet">
+        body {
+            margin: 1em;
+            font-family: 'Helvetica Neue', Helvetica, Calibri, sans-serif;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10pt;
+        }
+
+        nav>div {
+            box-sizing: border-box;
+            margin-right: 1em;
+            width: 25%;
+            border: solid 0.5px #ccc;
+            padding: 0.5em;
+            border-top-width: 6px;
+        }
+
+        nav>div:last-child {
+            margin-right: 0;
+        }
+
+        nav h2 {
+            font-size: 1.25rem;
+            margin: 0 0 0.5em 0;
+            line-height: 1;
+        }
+
+        button:before {
+            content: '🖍 ';
+        }
+
+        pre {
+            box-sizing: border-box;
+            width: 100%;
+            overflow: scroll;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 9pt;
+            line-height: 1.55;
+            margin: 0.25em;
+        }
+
+        pre,
+        code {
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 9pt;
+        }
+
+        #Content {
+            font-family: Georgia, serif;
+        }
+
+        p {
+            line-height: 1.45;
+        }
+
+        .highlighted-range {
+            background: rgba(255, 204, 0, 0.5);
+        }
+
+        .custom-highlight {
+            background: rgba(255, 45, 85, 0.5);
+        }
+
+        mark {
+            background: rgba(255, 149, 0, 0.5);
+        }
+
+        .custom-function {
+            background: rgba(76, 217, 100, 0.5);
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Highlight DOM Range</h1>
+        <p>Select some text in the paragraphs below and click one of the 🖍 Highlight buttons to demo the four ways to customize how to highlight DOM ranges. Highlights can span partial or full child and text nodes and can even overlap with other highlights.</p>
+    </header>
+    <nav>
+        <div style="border-top-color: rgba(255, 204, 0, 1)">
+            <h2>Default</h2>
+            <button id="Default">Highlight</button>
+            <p>With only one argument,
+                <code>highlightRange()</code> wraps each highlighted node in a
+                <code>&lt;span class="highlight-range"&gt;&lt;/span&gt;</code>
+            </p>
+            <pre>highlightRange(range);</pre>
+        </div>
+        <div style="border-top-color: rgba(255, 45, 85, 1)">
+            <h2>Custom Class</h2>
+            <button id="CustomClass">Highlight</button>
+            <p>Pass a class name as a
+                <code>string</code> as the second parameter to
+                <code>highlightRange()</code>.</p>
+            <pre>highlightRange(range, 'custom-highlight');</pre>
+        </div>
+        <div style="border-top-color: rgba(255, 149, 0, 1)">
+            <h2>Element Clone</h2>
+            <button id="HTMLElement">Highlight</button>
+            <p>An
+                <code>HTMLElement</code> as the second parameter of
+                <code>highlightRange()</code> will be cloned for each highlight.</p>
+            <pre>var mark = document.createElement('mark');
+mark.dataset.customId = 'mark-1';
+highlightRange(range, mark);</pre>
+        </div>
+        <div style="border-top-color: rgba(76, 217, 100, 1)">
+            <h2>Custom Function</h2>
+            <button id="CustomFunction">Highlight</button>
+            <p>A
+                <code>function</code> as the second parameter is used to wrap each highlight portion. The function recieves the
+                <code>Node</code> being highlighted as input and must return an
+                <span>Element</span> instance, generally, an inline element. </p>
+            <p>Try selecting the
+                <em>https://hipsum.co</em> text below.</p>
+            <pre>highlightRange(range, function (node) {
+    var text = node.textContent;
+    if (/^https?:\/\//.test(text)) {
+        var a = document.createElement('a');
+        a.href = text;
+        a.classList.add('custom-function')
+        return a;
+    }
+    var span = document.createElement('span');
+    span.classList.add('custom-function');
+    return span;
+});</pre>
+        </div>
+    </nav>
+    <div id="Content">
+        <p>Tumblr iPhone fashion https://hipsum.co axe man bun yuccie viral 90's pickled street art literally la croix. Gentrify mixtape listicle neutra. Austin slow-carb beard polaroid. Flannel narwhal ennui keytar, echo park chillwave 8-bit brooklyn cloud bread scenester. Cardigan flannel YOLO migas, fashion axe leggings neutra butcher normcore. Keffiyeh twee pok pok distillery. Leggings lo-fi tattooed raw denim iceland waistcoat locavore slow-carb chia succulents. Pinterest hella +1 gochujang blue bottle cornhole, shaman la croix ethical food truck. Activated charcoal selvage pickled brunch chicharrones prism migas. Iceland fanny pack shaman gochujang mustache, cray edison bulb succulents. Fashion axe slow-carb tote bag mixtape, literally bitters mustache humblebrag taxidermy prism gochujang. Hella taiyaki chia 3 wolf moon umami sartorial marfa knausgaard lyft banjo. Kitsch vaporware dreamcatcher listicle banh mi, tilde jianbing art party.</p>
+        <p>Four loko master cleanse kale chips four dollar toast skateboard, selvage beard venmo iceland distillery VHS. Plaid you probably haven't heard of them letterpress, knausgaard flexitarian sriracha hammock stumptown godard butcher pinterest pok pok craft beer. Skateboard quinoa echo park squid live-edge PBR&B pop-up meditation lyft sustainable pinterest cray leggings. Kale chips iceland neutra poke tacos skateboard activated charcoal blue bottle. Lo-fi thundercats bespoke squid. Succulents dreamcatcher poutine swag 3 wolf moon. Bushwick chicharrones quinoa, hell of tote bag helvetica taxidermy ennui 8-bit tousled art party mustache mixtape. Keytar dreamcatcher selfies pour-over woke +1 adaptogen kitsch typewriter twee YOLO four loko bicycle rights trust fund. Scenester narwhal woke tbh skateboard wayfarers locavore trust fund umami you probably haven't heard of them banh mi helvetica mustache. Copper mug taxidermy hexagon slow-carb, deep v farm-to-table drinking vinegar literally heirloom. Vinyl authentic cred, waistcoat fanny pack shabby chic whatever man bun letterpress tbh thundercats before they sold out vexillologist kombucha banjo. Tattooed everyday carry drinking vinegar hexagon helvetica, mixtape green juice iPhone typewriter salvia scenester. Cardigan gentrify crucifix kinfolk shoreditch green juice food truck everyday carry brooklyn church-key iPhone tattooed. Photo booth kombucha asymmetrical waistcoat echo park edison bulb.</p>
+        <p>Blue bottle 90's synth, shoreditch vice kinfolk tumeric distillery pickled knausgaard waistcoat freegan sustainable venmo semiotics. Succulents tumeric stumptown echo park, YOLO try-hard twee portland adaptogen. Kogi knausgaard scenester banh mi, tumeric tousled pinterest drinking vinegar franzen hella whatever actually bushwick mlkshk banjo. Lyft cloud bread man braid gentrify tumeric keytar. Letterpress street art banh mi helvetica shoreditch. Portland scenester leggings four dollar toast health goth kitsch man bun. Salvia twee hammock freegan, blog keytar post-ironic. Glossier pork belly pop-up normcore venmo, meh af taiyaki lo-fi. Direct trade vegan iceland mustache you probably haven't heard of them sartorial chicharrones blog next level godard craft beer cloud bread +1 yr green juice. Offal fingerstache DIY VHS, small batch scenester swag adaptogen dreamcatcher.</p>
+        <p>Pour-over mlkshk hoodie polaroid, tilde street art 3 wolf moon art party. Disrupt wayfarers sriracha paleo. Fixie plaid waistcoat you probably haven't heard of them, farm-to-table hammock portland brooklyn photo booth hashtag vape blue bottle master cleanse. Tacos tilde hoodie wolf vexillologist. Sriracha kale chips 3 wolf moon, kitsch put a bird on it meh palo santo vinyl occupy sustainable four dollar toast. Fam asymmetrical man bun keytar woke locavore. Everyday carry tumblr bespoke sriracha actually. Quinoa selfies kickstarter cardigan bespoke retro artisan tilde chia wayfarers echo park shabby chic. Copper mug photo booth neutra gochujang tofu deep v street art everyday carry readymade small batch pinterest blog franzen af.</p>
+        <p>Kale chips normcore single-origin coffee, taxidermy snackwave franzen man braid. Hot chicken tousled tbh, aesthetic williamsburg woke paleo hammock kinfolk. Chicharrones tote bag hoodie vaporware. Schlitz selvage four dollar toast cloud bread tilde. Tbh man braid health goth selvage, synth skateboard venmo sartorial bushwick squid selfies. You probably haven't heard of them woke blog fixie yr selvage blue bottle banh mi heirloom lyft butcher migas mixtape pabst tumblr. Before they sold out jianbing microdosing pug. Waistcoat mixtape raclette, fingerstache jean shorts salvia food truck post-ironic microdosing. Air plant flexitarian post-ironic pickled. Humblebrag keffiyeh prism photo booth butcher thundercats yr viral shaman hammock. Vexillologist vaporware offal tattooed knausgaard.</p>
+    </div>
+</body>
+
+</html>

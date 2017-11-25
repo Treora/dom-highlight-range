@@ -1,39 +1,27 @@
 var highlightRange = (function () {
-// Wrap each text node in a given DOM Range with an inline node , defaulting to <span class=[highLightClass]>.
-// Breaks start and/or end node if needed.
-// Returns a function that cleans up the created highlight (not a perfect undo: split text nodes are not merged again).
+// Wrap each text node in a given DOM Range with a specified element; by default a `<span class='highlighted-range'>`.
+// Breaks start and/or end text nodes if needed (i.e. if only part of the text falls inside the Range).
+// Returns a function that removes the wrapper again (not a perfect undo: split text nodes are not merged again).
 //
 // Parameters:
-// - rangeObject: a Range whose start and end containers are text nodes.
-// - highlightTemplate
-//     string: the CSS class the text pieces in the range should get, defaults to 'highlighted-range'
-//     HTMLElement: an element that will be cloned for each highlight
-//     function: a function that creates a wrapper node. It's passed the Node that's being
-//               highligted (but is free to ignore it). This can be used to apply properties 
-//               to a logical highlight, even if it's spread over many elements, for example
-//               to store an annotation identifier to be able to query for all highlight
-//               spans for the same annotation:
-//               
-//                 function renderAnnotation(annotation, range) {
-//                   highlightRange(range, function() {
-//                     var span = document.createElement('span');
-//                     span.classList.add('annotation');
-//                     span.dataset.annotationId = annotation.id;
-//                     return span;
-//                   });
-//                 }
+// - rangeObject: A DOM Range.
+// - highlightTemplate (optional): specifies the element to wrap the text with. Defaults to the string 'highlighted-range', and can be one of the following:
+//    * string: The CSS class the text pieces in the range should get.
+//    * HTMLElement: An element that will be cloned for each highlight.
+//    * function: A function that creates a wrapper element. It is passed the Text node that is being highlighted (which can safely be ignored because the wrapping is done for you).
 function highlightRange(rangeObject, highlightTemplate) {
     // Ignore range if empty.
     if (rangeObject.collapsed) {
         return;
     }
 
-    var highlightCallback = calculateHighlightCallback(highlightTemplate);
+    // Obtain the function that will create the wrapper elements for us.
+    var createHighlightElement = makeCreateHighlightElement(highlightTemplate);
 
-    // First put all nodes in an array (splits start and end nodes)
+    // First put all nodes in an array (splits start and end nodes if needed)
     var nodes = textNodesInRange(rangeObject);
 
-    // Remember range details to restore it later.
+    // Remember the range details to restore it below.
     var startContainer = rangeObject.startContainer;
     var startOffset = rangeObject.startOffset;
     var endContainer = rangeObject.endContainer;
@@ -42,7 +30,7 @@ function highlightRange(rangeObject, highlightTemplate) {
     // Highlight each node
     var highlights = [];
     for (var nodeIdx in nodes) {
-        highlights.push(highlightNode(nodes[nodeIdx], highlightCallback));
+        highlights.push(highlightNode(nodes[nodeIdx], createHighlightElement));
     }
 
     // The rangeObject gets messed up by our DOM changes. Be kind and restore.
@@ -71,13 +59,13 @@ function highlightRange(rangeObject, highlightTemplate) {
 
 /**
  * Figure out which factory function callback to use to create a highlight Node.
- * 
+ *
  * @param {string|function|HTMLElement} highlightTemplate
  * @return {function} - a function that will be used to construct a highlight Node
  * @throws {TypeError}
  * @private
  */
-function calculateHighlightCallback(highlightTemplate) {
+function makeCreateHighlightElement(highlightTemplate) {
     if ('function' === typeof highlightTemplate) return highlightTemplate;
     if (highlightTemplate instanceof HTMLElement) {
         return function _highlightTemplateHTMLElement() {
@@ -91,10 +79,10 @@ function calculateHighlightCallback(highlightTemplate) {
             return span;
         }
     }
-    if(undefined === highlightTemplate) {
-        return calculateHighlightCallback('highlighted-range');
+    if (undefined === highlightTemplate) {
+        return makeCreateHighlightElement('highlighted-range');
     }
-    var msg = 'highlightTemplate must be a string, an HTMLElement, a function, or undefined: ' + typeof highlightTemplate;
+    var msg = 'highlightTemplate must be a string, an HTMLElement, a function, or undefined. Got: ' + typeof highlightTemplate;
     throw new TypeError(msg);
 }
 
@@ -210,10 +198,10 @@ function setRangeToTextNodes(rangeObject) {
 }
 
 
-// Replace [node] with a constructed node</span>
-function highlightNode(node, highlightCallback) {
+// Create a wrapper element and wrap it around the given node.
+function highlightNode(node, createHighlightElement) {
     // Create a highlight
-    var highlight  = highlightCallback(node);
+    var highlight = createHighlightElement(node);
 
     // Wrap it around the text node
     node.parentNode.replaceChild(highlight, node);
@@ -223,9 +211,9 @@ function highlightNode(node, highlightCallback) {
 }
 
 
-// Remove a highlight <span> created with highlightNode.
+// Remove the wrapper element created with highlightNode.
 function removeHighlight(highlight) {
-    // Move its children (normally just one text node) into its parent.
+    // Move its children (should be just one text node) into its parent.
     while (highlight.firstChild) {
         highlight.parentNode.insertBefore(highlight.firstChild, highlight);
     }

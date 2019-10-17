@@ -1,0 +1,12 @@
+## v2.0.0 (October 2019)
+
+- Default to creating `<mark>`s instead of `<span>`s
+- Let the user specify the element to use.
+- Let the user specify any attributes to set on the elements.
+- No longer set a class by default.
+- API: `cleanup = highlightRange(rangeObject, highlightElement = 'mark', attributes = {})`
+
+## v1.0.0 (February 2016)
+
+- Always creates `<span>`s.
+- API: `cleanup = highlightRange(rangeObject, highlightClass = 'highlighted-range')`

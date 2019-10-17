@@ -6,8 +6,8 @@ var highlightRange = (function () {
 // Parameters:
 // - rangeObject: a Range whose start and end containers are text nodes.
 // - highlightElement: the element used to wrap text nodes. Defaults to 'mark'.
-// - highlightClass: if defined, this CSS class will be given to the wrapper elements.
-function highlightRange(rangeObject, highlightElement, highlightClass) {
+// - attributes: an Object defining any attributes to be set on the wrapper elements.
+function highlightRange(rangeObject, highlightElement, attributes) {
     // Ignore range if empty.
     if (rangeObject.collapsed) {
         return;
@@ -29,7 +29,7 @@ function highlightRange(rangeObject, highlightElement, highlightClass) {
     // Highlight each node
     var highlights = [];
     for (nodeIdx in nodes) {
-        highlights.push(highlightNode(nodes[nodeIdx], highlightElement, highlightClass));
+        highlights.push(highlightNode(nodes[nodeIdx], highlightElement, attributes));
     }
 
     // The rangeObject gets messed up by our DOM changes. Be kind and restore.
@@ -169,15 +169,22 @@ function setRangeToTextNodes(rangeObject) {
 }
 
 
-// Replace [node] with <highlightElement class="highlightClass">[node]</highlightElement>
-function highlightNode(node, highlightElement, highlightClass) {
+// Replace [node] with <highlightElement ...attributes>[node]</highlightElement>
+function highlightNode(node, highlightElement, attributes) {
     // Create a highlight
     var highlight = document.createElement(highlightElement);
-    if (highlightClass) {
-        highlight.classList.add(highlightClass);
+
+    // Set the requested attributes
+    if (attributes) {
+        var keys = Object.keys(attributes);
+        for (var i = 0; i < keys.length; i++) {
+          var key = keys[i];
+          var value = attributes[key];
+          highlight.setAttribute(key, value);
+        }
     }
 
-    // Wrap it around the text node
+    // Wrap the created element around the text node
     node.parentNode.replaceChild(highlight, node);
     highlight.appendChild(node);
 

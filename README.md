@@ -7,8 +7,7 @@ Returns a function that cleans up the created highlight (not a perfect undo: spl
 Parameters:
 - `rangeObject`: a Range whose start and end containers are text nodes.
 - `highlightElement`: the element used to wrap text nodes. Defaults to `'mark'`.
-- `highlightClass`: if defined, this CSS class will be given to the wrapper elements.
-
+- `attributes`: an Object defining any attributes to be set on the wrapper elements.
 
 ## Example usage
 
@@ -19,7 +18,7 @@ import highlightRange from 'dom-highlight-range';
 var selection = window.getSelection();
 if (!selection.isCollapsed) {
         var range = selection.getRangeAt(0);
-        var cleanup = highlightRange(range, 'span', 'some-CSS-class');
+        var cleanup = highlightRange(range, 'span', { class: 'some-CSS-class' });
         // Running cleanup() would remove the highlight again.
 }
 ```

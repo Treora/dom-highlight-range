@@ -1,19 +1,20 @@
 var highlightRange = (function () {
-// Wrap each text node in a given DOM Range with a <span class=[highLightClass]>.
+// Wrap each text node in a given DOM Range with a <mark> or other element.
 // Breaks start and/or end node if needed.
 // Returns a function that cleans up the created highlight (not a perfect undo: split text nodes are not merged again).
 //
 // Parameters:
 // - rangeObject: a Range whose start and end containers are text nodes.
-// - highlightClass: the CSS class the text pieces in the range should get, defaults to 'highlighted-range'.
-function highlightRange(rangeObject, highlightClass) {
+// - highlightElement: the element used to wrap text nodes. Defaults to 'mark'.
+// - highlightClass: if defined, this CSS class will be given to the wrapper elements.
+function highlightRange(rangeObject, highlightElement, highlightClass) {
     // Ignore range if empty.
     if (rangeObject.collapsed) {
         return;
     }
 
-    if (typeof highlightClass == 'undefined') {
-        highlightClass = 'highlighted-range';
+    if (highlightElement === undefined) {
+        highlightElement = 'mark';
     }
 
     // First put all nodes in an array (splits start and end nodes)
@@ -28,7 +29,7 @@ function highlightRange(rangeObject, highlightClass) {
     // Highlight each node
     var highlights = [];
     for (nodeIdx in nodes) {
-        highlights.push(highlightNode(nodes[nodeIdx], highlightClass));
+        highlights.push(highlightNode(nodes[nodeIdx], highlightElement, highlightClass));
     }
 
     // The rangeObject gets messed up by our DOM changes. Be kind and restore.
@@ -168,11 +169,13 @@ function setRangeToTextNodes(rangeObject) {
 }
 
 
-// Replace [node] with <span class=[highlightClass]>[node]</span>
-function highlightNode(node, highlightClass) {
+// Replace [node] with <highlightElement class="highlightClass">[node]</highlightElement>
+function highlightNode(node, highlightElement, highlightClass) {
     // Create a highlight
-    var highlight = document.createElement('span');
-    highlight.classList.add(highlightClass);
+    var highlight = document.createElement(highlightElement);
+    if (highlightClass) {
+        highlight.classList.add(highlightClass);
+    }
 
     // Wrap it around the text node
     node.parentNode.replaceChild(highlight, node);
@@ -182,7 +185,7 @@ function highlightNode(node, highlightClass) {
 }
 
 
-// Remove a highlight <span> created with highlightNode.
+// Remove a highlight element created with highlightNode.
 function removeHighlight(highlight) {
     // Move its children (normally just one text node) into its parent.
     while (highlight.firstChild) {

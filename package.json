@@ -1,7 +1,7 @@
 {
   "name": "dom-highlight-range",
   "version": "1.0.1",
-  "description": "Highlight (put into <span>s) text nodes in a given DOM Range.",
+  "description": "Highlight (put into <mark>s) text nodes in a given DOM Range.",
   "main": "highlight-range.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

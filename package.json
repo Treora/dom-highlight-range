@@ -1,6 +1,6 @@
 {
   "name": "dom-highlight-range",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Highlight (put into <mark>s) text nodes in a given DOM Range.",
   "main": "highlight-range.js",
   "scripts": {},

@@ -59,66 +59,49 @@ function highlightRange(rangeObject, highlightElement, attributes) {
 
 // Return an array of the text nodes in the range. Split the start and end nodes if required.
 function textNodesInRange(range) {
-    let ancestor = range.commonAncestorContainer;
-    try {
-        [startNode, startOffset] = nearestTextPointInRange(range, range.startContainer, range.startOffset);
-        [endNode, endOffset] = nearestTextPointInRange(range, range.endContainer, range.endOffset, true);
-    } catch (error) {
-        if (error instanceof TypeError) return []; // TODO create custom error type
-        throw error;
-    }
-    // If only part of the start or end node is in the range, split it.
-    if (startOffset > 0) {
-        const createdNode = startNode.splitText(startOffset);
-        if (endNode === startNode) {
+    // If the start or end node is a text node and only partly in the range, split it.
+    if (range.startContainer.nodeType === Node.TEXT_NODE && range.startOffset > 0) {
+        const endOffset = range.endOffset; // (this may get lost when the splitting the node)
+        const createdNode = range.startContainer.splitText(range.startOffset);
+        if (range.endContainer === range.startContainer) {
             // If the end was in the same container, it will now be in the newly created node.
-            endNode = createdNode;
-            endOffset = endOffset - startOffset;
-            ancestor = endNode.parentNode;
+            range.setEnd(createdNode, endOffset - range.startOffset);
         }
-        startNode = createdNode;
-        startOffset = 0;
+        range.setStart(createdNode, 0);
     }
-    if (endOffset < endNode.length) {
-        endNode.splitText(endOffset);
+    if (range.endContainer.nodeType === Node.TEXT_NODE && range.endOffset < range.endContainer.length) {
+        range.endContainer.splitText(range.endOffset);
     }
 
-    // Collect all the text nodes from start to end.
-    const walker = startNode.ownerDocument.createTreeWalker(ancestor, NodeFilter.SHOW_TEXT);
-    walker.currentNode = startNode;
+    // Collect the text nodes.
+    const walker = range.startContainer.ownerDocument.createTreeWalker(
+        range.commonAncestorContainer,
+        NodeFilter.SHOW_TEXT,
+        node => range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT,
+    );
+    walker.currentNode = range.startContainer;
+
+    // // Optimise by skipping nodes that are explicitly outside the range.
+    // const NodeTypesWithCharacterOffset = [
+    //    Node.TEXT_NODE,
+    //    Node.PROCESSING_INSTRUCTION_NODE,
+    //    Node.COMMENT_NODE,
+    // ];
+    // if (!NodeTypesWithCharacterOffset.includes(range.startContainer.nodeType)) {
+    //     if (range.startOffset < range.startContainer.childNodes.length) {
+    //         walker.currentNode = range.startContainer.childNodes[range.startOffset];
+    //     } else {
+    //         walker.nextSibling(); // TODO verify this is correct.
+    //     }
+    // }
+
     const nodes = [];
-    do nodes.push(walker.currentNode) while (walker.currentNode !== endNode && walker.nextNode());
+    if (walker.currentNode.nodeType === Node.TEXT_NODE)
+        nodes.push(walker.currentNode);
+    while (walker.nextNode() && range.comparePoint(walker.currentNode, 0) !== 1)
+        nodes.push(walker.currentNode);
     return nodes;
 }
-
-
-function nearestTextPointInRange(range, node, offset, reverse) {
-    if (node.nodeType === Node.TEXT_NODE)
-        return [node, offset];
-    var walker = node.ownerDocument.createTreeWalker(
-        range.commonAncestorContainer,
-        NodeFilter.SHOW_TEXT
-    );
-    var textNode;
-    if (node.nodeType === Node.PROCESSING_INSTRUCTION_NODE ||
-        node.nodeType === Node.COMMENT_NODE)
-    {
-        walker.currentNode = node;
-        textNode = reverse ? walker.previousNode() : walker.nextNode();
-    } else if (offset < node.childNodes.length) {
-        walker.currentNode = node.childNodes[offset];
-        textNode = reverse ? walker.previousNode() : walker.nextNode();
-    } else {
-        walker.currentNode = node;
-        textNode = reverse
-            ? walker.lastChild() || walker.previousNode()
-            : walker.nextSibling();
-    }
-    if (textNode === null || !range.intersectsNode(textNode))
-        throw new TypeError("Range contains no text nodes.");
-    return [textNode, reverse ? textNode.length : 0];
-}
-
 
 
 // Replace [node] with <highlightElement ...attributes>[node]</highlightElement>

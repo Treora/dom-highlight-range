@@ -58,89 +58,39 @@ function highlightRange(rangeObject, highlightElement, attributes) {
 
 
 // Return an array of the text nodes in the range. Split the start and end nodes if required.
-function textNodesInRange(rangeObject) {
-    // Modify Range to make sure that the start and end nodes are text nodes.
+function textNodesInRange(range) {
+    let ancestor = range.commonAncestorContainer;
     try {
-        shrinkRangeToTextNodes(rangeObject);
+        [startNode, startOffset] = nearestTextPointInRange(range, range.startContainer, range.startOffset);
+        [endNode, endOffset] = nearestTextPointInRange(range, range.endContainer, range.endOffset, true);
     } catch (error) {
-        if (error instanceOf TypeError) { // TODO create custom error type
-            return []; // There are no text nodes.
-        }
+        if (error instanceof TypeError) return []; // TODO create custom error type
         throw error;
     }
-
-    var nodes = [];
-
-    // Ignore range if empty.
-    if (rangeObject.collapsed) {
-        return nodes;
-    }
-
-    // Include (part of) the start node if needed.
-    if (rangeObject.startOffset != rangeObject.startContainer.length) {
-        // If only part of the start node is in the range, split it.
-        if (rangeObject.startOffset != 0) {
-            // Split startContainer to turn the part after the startOffset into a new node.
-            var createdNode = rangeObject.startContainer.splitText(rangeObject.startOffset);
-
+    // If only part of the start or end node is in the range, split it.
+    if (startOffset > 0) {
+        const createdNode = startNode.splitText(startOffset);
+        if (endNode === startNode) {
             // If the end was in the same container, it will now be in the newly created node.
-            if (rangeObject.endContainer === rangeObject.startContainer) {
-                rangeObject.setEnd(createdNode, rangeObject.endOffset - rangeObject.startOffset);
-            }
-
-            // Update the start node, which no longer has an offset.
-            rangeObject.setStart(createdNode, 0);
+            endNode = createdNode;
+            endOffset = endOffset - startOffset;
+            ancestor = endNode.parentNode;
         }
+        startNode = createdNode;
+        startOffset = 0;
+    }
+    if (endOffset < endNode.length) {
+        endNode.splitText(endOffset);
     }
 
-    // Create an iterator to iterate through the nodes.
-    var root = (typeof rangeObject.commonAncestorContainer != 'undefined')
-               ? rangeObject.commonAncestorContainer
-               : document.body; // fall back to whole document for browser compatibility
-    var iter = document.createNodeIterator(root, NodeFilter.SHOW_TEXT);
-
-    // Find the start node (could we somehow skip this seemingly needless search?)
-    while (iter.referenceNode !== rangeObject.startContainer && iter.referenceNode !== null) {
-        iter.nextNode();
-    }
-
-    // Add each node up to (but excluding) the end node.
-    while (iter.referenceNode !== rangeObject.endContainer && iter.referenceNode !== null) {
-        nodes.push(iter.referenceNode);
-        iter.nextNode();
-    }
-
-    // Include (part of) the end node if needed.
-    if (rangeObject.endOffset != 0) {
-
-        // If it is only partly included, we need to split it up.
-        if (rangeObject.endOffset != rangeObject.endContainer.length) {
-            // Split the node, breaking off the part outside the range.
-            rangeObject.endContainer.splitText(rangeObject.endOffset);
-            // Note that the range object need not be updated.
-
-            //assert(rangeObject.endOffset == rangeObject.endContainer.length);
-        }
-
-        // Add the end node.
-        nodes.push(rangeObject.endContainer);
-    }
-
+    // Collect all the text nodes from start to end.
+    const walker = startNode.ownerDocument.createTreeWalker(ancestor, NodeFilter.SHOW_TEXT);
+    walker.currentNode = startNode;
+    const nodes = [];
+    do nodes.push(walker.currentNode) while (walker.currentNode !== endNode && walker.nextNode());
     return nodes;
 }
 
-
-// Shrink the Range until both its start and its end container are text nodes.
-function shrinkRangeToTextNodes(range) {
-    if (range.startContainer.nodeType !== Node.TEXT_NODE) {
-        const [node, offset] = nearestTextPointInRange(range, range.startContainer, range.startOffset);
-        range.setStart(node, offset);
-    }
-    if (range.endContainer.nodeType !== Node.TEXT_NODE) {
-        const [node, offset] = nearestTextPointInRange(range, range.endContainer, range.endOffset, true);
-        range.setEnd(node, offset);
-    }
-}
 
 function nearestTextPointInRange(range, node, offset, reverse) {
     if (node.nodeType === Node.TEXT_NODE)

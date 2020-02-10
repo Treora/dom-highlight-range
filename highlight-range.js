@@ -60,7 +60,14 @@ function highlightRange(rangeObject, highlightElement, attributes) {
 // Return an array of the text nodes in the range. Split the start and end nodes if required.
 function textNodesInRange(rangeObject) {
     // Modify Range to make sure that the start and end nodes are text nodes.
-    setRangeToTextNodes(rangeObject);
+    try {
+        shrinkRangeToTextNodes(rangeObject);
+    } catch (error) {
+        if (error instanceOf TypeError) { // TODO create custom error type
+            return []; // There are no text nodes.
+        }
+        throw error;
+    }
 
     var nodes = [];
 
@@ -123,48 +130,42 @@ function textNodesInRange(rangeObject) {
 }
 
 
-// Normalise the range to start and end in a text node.
-// Copyright (c) 2015 Randall Leeds
-function setRangeToTextNodes(rangeObject) {
-    function getFirstTextNode(node) {
-        if (node.nodeType === Node.TEXT_NODE) return node;
-        var document = node.ownerDocument;
-        var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-        return walker.firstChild();
+// Shrink the Range until both its start and its end container are text nodes.
+function shrinkRangeToTextNodes(range) {
+    function nearestTextNode(container, offset, reverse) {
+        if (container.nodeType !== Node.TEXT_NODE) {
+            var walker = container.ownerDocument.createTreeWalker(
+                range.commonAncestorContainer,
+                NodeFilter.SHOW_TEXT
+            );
+            var textNode;
+            if (container.nodeType === Node.PROCESSING_INSTRUCTION_NODE ||
+                container.nodeType === Node.COMMENT_NODE)
+            {
+                walker.currentNode = container;
+                textNode = reverse ? walker.previousNode() : walker.nextNode();
+            } else if (range.endOffset < container.childNodes.length) {
+                walker.currentNode = container.childNodes[range.endOffset];
+                textNode = reverse ? walker.previousNode() : walker.nextNode();
+            } else {
+                walker.currentNode = container;
+                textNode = reverse
+                    ? walker.lastChild() || walker.previousNode()
+                    : walker.nextSibling();
+            }
+            if (textNode === null || !range.intersectsNode(textNode))
+                throw new TypeError("Range contains no text nodes.");
+            return textNode;
+        }
     }
 
-    var startNode = rangeObject.startContainer;
-    var startOffset = rangeObject.startOffset;
-
-    // Drill down to a text node if the range starts at the container boundary.
-    if (startNode.nodeType !== Node.TEXT_NODE) {
-        if (startOffset === startNode.childNodes.length) {
-            startNode = startNode.childNodes[startOffset - 1];
-            startNode = getFirstTextNode(startNode);
-            startOffset = startNode.textContent.length;
-        } else {
-            startNode = startNode.childNodes[startOffset];
-            startNode = getFirstTextNode(startNode);
-            startOffset = 0;
-        }
-        rangeObject.setStart(startNode, startOffset);
+    if (range.startContainer.nodeType !== Node.TEXT_NODE) {
+        var textNode = nearestTextNode(range.startContainer, range.startOffset);
+        range.setStart(textNode, 0);
     }
-
-    var endNode = rangeObject.endContainer;
-    var endOffset = rangeObject.endOffset;
-
-    // Drill down to a text node if the range ends at the container boundary.
-    if (endNode.nodeType !== Node.TEXT_NODE) {
-        if (endOffset === endNode.childNodes.length) {
-            endNode = endNode.childNodes[endOffset - 1];
-            endNode = getFirstTextNode(endNode);
-            endOffset = endNode.textContent.length;
-        } else {
-            endNode = endNode.childNodes[endOffset];
-            endNode = getFirstTextNode(endNode);
-            endOffset = 0;
-        }
-        rangeObject.setEnd(endNode, endOffset);
+    if (range.endContainer.nodeType !== Node.TEXT_NODE) {
+        var textNode = nearestTextNode(range.endContainer, range.endOffset, true);
+        range.setEnd(textNode, textNode.length);
     }
 }
 

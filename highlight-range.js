@@ -132,42 +132,43 @@ function textNodesInRange(rangeObject) {
 
 // Shrink the Range until both its start and its end container are text nodes.
 function shrinkRangeToTextNodes(range) {
-    function nearestTextNode(container, offset, reverse) {
-        if (container.nodeType !== Node.TEXT_NODE) {
-            var walker = container.ownerDocument.createTreeWalker(
-                range.commonAncestorContainer,
-                NodeFilter.SHOW_TEXT
-            );
-            var textNode;
-            if (container.nodeType === Node.PROCESSING_INSTRUCTION_NODE ||
-                container.nodeType === Node.COMMENT_NODE)
-            {
-                walker.currentNode = container;
-                textNode = reverse ? walker.previousNode() : walker.nextNode();
-            } else if (range.endOffset < container.childNodes.length) {
-                walker.currentNode = container.childNodes[range.endOffset];
-                textNode = reverse ? walker.previousNode() : walker.nextNode();
-            } else {
-                walker.currentNode = container;
-                textNode = reverse
-                    ? walker.lastChild() || walker.previousNode()
-                    : walker.nextSibling();
-            }
-            if (textNode === null || !range.intersectsNode(textNode))
-                throw new TypeError("Range contains no text nodes.");
-            return textNode;
-        }
-    }
-
     if (range.startContainer.nodeType !== Node.TEXT_NODE) {
-        var textNode = nearestTextNode(range.startContainer, range.startOffset);
-        range.setStart(textNode, 0);
+        const [node, offset] = nearestTextPointInRange(range, range.startContainer, range.startOffset);
+        range.setStart(node, offset);
     }
     if (range.endContainer.nodeType !== Node.TEXT_NODE) {
-        var textNode = nearestTextNode(range.endContainer, range.endOffset, true);
-        range.setEnd(textNode, textNode.length);
+        const [node, offset] = nearestTextPointInRange(range, range.endContainer, range.endOffset, true);
+        range.setEnd(node, offset);
     }
 }
+
+function nearestTextPointInRange(range, node, offset, reverse) {
+    if (node.nodeType === Node.TEXT_NODE)
+        return [node, offset];
+    var walker = node.ownerDocument.createTreeWalker(
+        range.commonAncestorContainer,
+        NodeFilter.SHOW_TEXT
+    );
+    var textNode;
+    if (node.nodeType === Node.PROCESSING_INSTRUCTION_NODE ||
+        node.nodeType === Node.COMMENT_NODE)
+    {
+        walker.currentNode = node;
+        textNode = reverse ? walker.previousNode() : walker.nextNode();
+    } else if (range.endOffset < node.childNodes.length) {
+        walker.currentNode = node.childNodes[range.endOffset];
+        textNode = reverse ? walker.previousNode() : walker.nextNode();
+    } else {
+        walker.currentNode = node;
+        textNode = reverse
+            ? walker.lastChild() || walker.previousNode()
+            : walker.nextSibling();
+    }
+    if (textNode === null || !range.intersectsNode(textNode))
+        throw new TypeError("Range contains no text nodes.");
+    return [textNode, reverse ? textNode.length : 0];
+}
+
 
 
 // Replace [node] with <highlightElement ...attributes>[node]</highlightElement>

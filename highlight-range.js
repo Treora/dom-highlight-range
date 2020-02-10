@@ -105,8 +105,8 @@ function nearestTextPointInRange(range, node, offset, reverse) {
     {
         walker.currentNode = node;
         textNode = reverse ? walker.previousNode() : walker.nextNode();
-    } else if (range.endOffset < node.childNodes.length) {
-        walker.currentNode = node.childNodes[range.endOffset];
+    } else if (offset < node.childNodes.length) {
+        walker.currentNode = node.childNodes[offset];
         textNode = reverse ? walker.previousNode() : walker.nextNode();
     } else {
         walker.currentNode = node;

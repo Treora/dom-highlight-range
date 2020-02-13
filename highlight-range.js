@@ -5,49 +5,34 @@ const highlightRange = (function () {
 // not merged again).
 //
 // Parameters:
-// - rangeObject: a Range whose start and end containers are text nodes.
-// - highlightElement: the element used to wrap text nodes. Defaults to 'mark'.
+// - range: a Range whose start and end containers are text nodes.
+// - tagName: the element used to wrap text nodes. Defaults to 'mark'.
 // - attributes: an Object defining any attributes to be set on the wrapper elements.
-function highlightRange(rangeObject, highlightElement = 'mark', attributes = {}) {
-  if (rangeObject.collapsed) return;
+function highlightRange(range, tagName = 'mark', attributes = {}) {
+  if (range.collapsed) return;
 
   // First put all nodes in an array (splits start and end nodes if needed)
-  const nodes = textNodesInRange(rangeObject);
+  const nodes = textNodesInRange(range);
 
-  // Remember range details to restore it later.
-  const startContainer = rangeObject.startContainer;
-  const startOffset = rangeObject.startOffset;
-  const endContainer = rangeObject.endContainer;
-  const endOffset = rangeObject.endOffset;
-
-  // Highlight each node
-  const highlights = [];
-  for (nodeIdx in nodes) {
-    highlights.push(highlightNode(nodes[nodeIdx], highlightElement, attributes));
-  }
-
-  // The rangeObject gets messed up by our DOM changes. Be kind and restore.
-  rangeObject.setStart(startContainer, startOffset);
-  rangeObject.setEnd(endContainer, endOffset);
-
-  // Return a function that cleans up the highlights.
-  function cleanupHighlights() {
-    // Remember range details to restore it later.
-    const startContainer = rangeObject.startContainer;
-    const startOffset = rangeObject.startOffset;
-    const endContainer = rangeObject.endContainer;
-    const endOffset = rangeObject.endOffset;
-
-    // Remove each of the created highlights.
-    for (const highlightIdx in highlights) {
-      removeHighlight(highlights[highlightIdx]);
+  const highlightElements = [];
+  withRestoreRange(range, () => { // Restore potentially disturbed Range after messing with the DOM.
+    // Highlight each node
+    for (nodeIdx in nodes) {
+      const highlightElement = wrapNodeInHighlight(nodes[nodeIdx], tagName, attributes);
+      highlightElements.push(highlightElement);
     }
+  });
 
-    // Be kind and restore the rangeObject again.
-    rangeObject.setStart(startContainer, startOffset);
-    rangeObject.setEnd(endContainer, endOffset);
+  // Return a function that cleans up the highlightElements.
+  function removeHighlights() {
+    withRestoreRange(range, () => {
+      // Remove each of the created highlightElements.
+      for (const highlightIdx in highlightElements) {
+        removeHighlight(highlightElements[highlightIdx]);
+      }
+    });
   }
-  return cleanupHighlights;
+  return removeHighlights;
 }
 
 // Return an array of the text nodes in the range. Split the start and end nodes if required.
@@ -99,28 +84,40 @@ function textNodesInRange(range) {
   return nodes;
 }
 
-// Replace [node] with <highlightElement ...attributes>[node]</highlightElement>
-function highlightNode(node, highlightElement, attributes) {
-  const highlight = node.ownerDocument.createElement(highlightElement);
+function withRestoreRange(range, func) {
+    const startContainer = range.startContainer;
+    const startOffset = range.startOffset;
+    const endContainer = range.endContainer;
+    const endOffset = range.endOffset;
+
+    func();
+
+    range.setStart(startContainer, startOffset);
+    range.setEnd(endContainer, endOffset);
+}
+
+// Replace [node] with <tagName ...attributes>[node]</tagName>
+function wrapNodeInHighlight(node, tagName, attributes) {
+  const highlightElement = node.ownerDocument.createElement(tagName);
   Object.keys(attributes).forEach(key => {
-    highlight.setAttribute(key, attributes[key]);
+    highlightElement.setAttribute(key, attributes[key]);
   });
   const tempRange = node.ownerDocument.createRange();
   tempRange.selectNode(node);
-  tempRange.surroundContents(highlight);
-  return highlight;
+  tempRange.surroundContents(highlightElement);
+  return highlightElement;
 }
 
-// Remove a highlight element created with highlightNode.
-function removeHighlight(highlight) {
-  if (highlight.childNodes.length === 1) {
-    highlight.parentNode.replaceChild(highlight.firstChild, highlight);
+// Remove a highlight element created with wrapNodeInHighlight.
+function removeHighlight(highlightElement) {
+  if (highlightElement.childNodes.length === 1) {
+    highlightElement.parentNode.replaceChild(highlightElement.firstChild, highlightElement);
   } else {
     // If the highlight somehow contains multiple nodes now, move them all.
-    while (highlight.firstChild) {
-      highlight.parentNode.insertBefore(highlight.firstChild, highlight);
+    while (highlightElement.firstChild) {
+      highlightElement.parentNode.insertBefore(highlightElement.firstChild, highlightElement);
     }
-    highlight.remove();
+    highlightElement.remove();
   }
 }
 

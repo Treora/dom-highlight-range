@@ -6,8 +6,8 @@ Returns a function that cleans up the created highlight (not a perfect undo: spl
 not merged again).
 
 Parameters:
-- `rangeObject`: a Range whose start and end containers are text nodes.
-- `highlightElement`: the element used to wrap text nodes. Defaults to `'mark'`.
+- `range`: a Range whose start and end containers are text nodes.
+- `tagName`: the element used to wrap text nodes. Defaults to `'mark'`.
 - `attributes`: an Object defining any attributes to be set on the wrapper elements.
 
 ## Example usage
@@ -16,10 +16,10 @@ Parameters:
 import highlightRange from 'dom-highlight-range';
 
 // Highlight the text currently selected by the user, if any.
-var selection = window.getSelection();
+const selection = window.getSelection();
 if (!selection.isCollapsed) {
-        var range = selection.getRangeAt(0);
-        var cleanup = highlightRange(range, 'span', { class: 'some-CSS-class' });
-        // Running cleanup() would remove the highlight again.
+        const range = selection.getRangeAt(0);
+        const removeHighlights = highlightRange(range, 'span', { class: 'some-CSS-class' });
+        // Running removeHighlights() would remove the highlight again.
 }
 ```

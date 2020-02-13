@@ -2,7 +2,8 @@
 
 Wrap each text node in a given DOM Range with a `<mark>` element.
 Breaks start and/or end node if needed.
-Returns a function that cleans up the created highlight (not a perfect undo: split text nodes are not merged again).
+Returns a function that cleans up the created highlight (not a perfect undo: split text nodes are
+not merged again).
 
 Parameters:
 - `rangeObject`: a Range whose start and end containers are text nodes.

@@ -1,7 +1,7 @@
-## Unreleased
+## v3.0.0 (February 2020)
 
-- Reimplement Range normalisation to fix edge cases.
-
+- Use ES6
+- Reimplement much of the code; fixes some edge cases
 
 ## v2.0.0 (October 2019)
 

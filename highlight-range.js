@@ -101,22 +101,27 @@ function textNodesInRange(range) {
 
 // Replace [node] with <highlightElement ...attributes>[node]</highlightElement>
 function highlightNode(node, highlightElement, attributes) {
-  const highlight = document.createElement(highlightElement);
+  const highlight = node.ownerDocument.createElement(highlightElement);
   Object.keys(attributes).forEach(key => {
     highlight.setAttribute(key, attributes[key]);
   });
-  node.parentNode.replaceChild(highlight, node);
-  highlight.appendChild(node);
+  const tempRange = node.ownerDocument.createRange();
+  tempRange.selectNode(node);
+  tempRange.surroundContents(highlight);
   return highlight;
 }
 
 // Remove a highlight element created with highlightNode.
 function removeHighlight(highlight) {
-  // Move its children (normally just one text node) into its parent.
-  while (highlight.firstChild) {
-    highlight.parentNode.insertBefore(highlight.firstChild, highlight);
+  if (highlight.childNodes.length === 1) {
+    highlight.parentNode.replaceChild(highlight.firstChild, highlight);
+  } else {
+    // If the highlight somehow contains multiple nodes now, move them all.
+    while (highlight.firstChild) {
+      highlight.parentNode.insertBefore(highlight.firstChild, highlight);
+    }
+    highlight.remove();
   }
-  highlight.remove();
 }
 
 return highlightRange;

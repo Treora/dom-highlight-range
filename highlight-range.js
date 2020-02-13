@@ -17,7 +17,7 @@ function highlightRange(range, tagName = 'mark', attributes = {}) {
 
   // Highlight each node
   const highlightElements = [];
-  for (nodeIdx in nodes) {
+  for (const nodeIdx in nodes) {
     const highlightElement = wrapNodeInHighlight(nodes[nodeIdx], tagName, attributes);
     highlightElements.push(highlightElement);
   }

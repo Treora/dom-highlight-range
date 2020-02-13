@@ -5,7 +5,8 @@ const highlightRange = (function () {
 // not merged again).
 //
 // Parameters:
-// - range: a Range whose start and end containers are text nodes.
+// - range: a DOM Range object. Note that as highlighting modifies the DOM, the range may be
+//   unusable afterwards
 // - tagName: the element used to wrap text nodes. Defaults to 'mark'.
 // - attributes: an Object defining any attributes to be set on the wrapper elements.
 function highlightRange(range, tagName = 'mark', attributes = {}) {
@@ -14,23 +15,19 @@ function highlightRange(range, tagName = 'mark', attributes = {}) {
   // First put all nodes in an array (splits start and end nodes if needed)
   const nodes = textNodesInRange(range);
 
+  // Highlight each node
   const highlightElements = [];
-  withRestoreRange(range, () => { // Restore potentially disturbed Range after messing with the DOM.
-    // Highlight each node
-    for (nodeIdx in nodes) {
-      const highlightElement = wrapNodeInHighlight(nodes[nodeIdx], tagName, attributes);
-      highlightElements.push(highlightElement);
-    }
-  });
+  for (nodeIdx in nodes) {
+    const highlightElement = wrapNodeInHighlight(nodes[nodeIdx], tagName, attributes);
+    highlightElements.push(highlightElement);
+  }
 
   // Return a function that cleans up the highlightElements.
   function removeHighlights() {
-    withRestoreRange(range, () => {
-      // Remove each of the created highlightElements.
-      for (const highlightIdx in highlightElements) {
-        removeHighlight(highlightElements[highlightIdx]);
-      }
-    });
+    // Remove each of the created highlightElements.
+    for (const highlightIdx in highlightElements) {
+      removeHighlight(highlightElements[highlightIdx]);
+    }
   }
   return removeHighlights;
 }
@@ -82,18 +79,6 @@ function textNodesInRange(range) {
   while (walker.nextNode() && range.comparePoint(walker.currentNode, 0) !== 1)
     nodes.push(walker.currentNode);
   return nodes;
-}
-
-function withRestoreRange(range, func) {
-    const startContainer = range.startContainer;
-    const startOffset = range.startOffset;
-    const endContainer = range.endContainer;
-    const endOffset = range.endOffset;
-
-    func();
-
-    range.setStart(startContainer, startOffset);
-    range.setEnd(endContainer, endOffset);
 }
 
 // Replace [node] with <tagName ...attributes>[node]</tagName>

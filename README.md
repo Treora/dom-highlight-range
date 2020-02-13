@@ -6,7 +6,8 @@ Returns a function that cleans up the created highlight (not a perfect undo: spl
 not merged again).
 
 Parameters:
-- `range`: a Range whose start and end containers are text nodes.
+- `range`: a DOM [Range](https://developer.mozilla.org/en-US/docs/Web/API/Range) object. Note that
+  as highlighting modifies the DOM, the range may be unusable afterwards.
 - `tagName`: the element used to wrap text nodes. Defaults to `'mark'`.
 - `attributes`: an Object defining any attributes to be set on the wrapper elements.
 
